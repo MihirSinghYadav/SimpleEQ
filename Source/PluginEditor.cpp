@@ -222,11 +222,11 @@ void ResponseCurveComponent::paint(juce::Graphics &g)
     using namespace juce;
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll(Colours::black);
-    
+
     g.drawImage(background, getLocalBounds().toFloat());
 
-//    auto responseArea = getLocalBounds();
-    auto responseArea = getAnalysisArea(); //getRenderArea();
+    //    auto responseArea = getLocalBounds();
+    auto responseArea = getAnalysisArea(); // getRenderArea();
     auto w = responseArea.getWidth();
 
     auto &lowcut = monoChain.get<ChainPositions::LowCut>();
@@ -294,66 +294,92 @@ void ResponseCurveComponent::resized()
 {
     using namespace juce;
     background = Image(Image::PixelFormat::RGB, getWidth(), getHeight(), true);
-    
+
     Graphics g(background);
-    
-    Array<float> freqs
-    {
-        20, 30, 40, 50, 100,
-        200, 300, 400, 500, 1000,
-        2000, 3000, 4000, 5000, 10000,
-        20000
-    };
-    
+
+    Array<float> freqs{
+        20, /*30, 40,*/ 50, 100,
+        200, /*300, 400,*/ 500, 1000,
+        2000, /*3000, 4000,*/ 5000, 10000,
+        20000};
+
     auto renderArea = getAnalysisArea();
     auto left = renderArea.getX();
     auto right = renderArea.getRight();
     auto top = renderArea.getY();
     auto bottom = renderArea.getBottom();
     auto width = renderArea.getWidth();
-    
+
     Array<float> xs;
-    for(auto f : freqs)
+    for (auto f : freqs)
     {
         auto normX = mapFromLog10(f, 20.f, 20000.f);
         xs.add(left + width * normX);
     }
-    
+
     g.setColour(Colours::dimgrey);
-//    for(auto f : freqs)
-for(auto x : xs)
+    //    for(auto f : freqs)
+    for (auto x : xs)
     {
-//        auto normX = mapFromLog10(f, 20.f, 20000.f);
-        
-//        g.drawVerticalLine(getWidth() * normX, 0.f, getHeight());
+        //        auto normX = mapFromLog10(f, 20.f, 20000.f);
+
+        //        g.drawVerticalLine(getWidth() * normX, 0.f, getHeight());
         g.drawVerticalLine(x, top, bottom);
     }
-    
-    Array<float> gain
+
+    Array<float> gain{
+        -24, -12, 0, 12, 24};
+    for (auto gDb : gain)
     {
-        -24, -12, 0, 12, 24
-    };
-    for(auto gDb : gain)
-    {
-        auto y = jmap(gDb, -24.f, 24.f, float(bottom),float(top));
-//        g.drawHorizontalLine(y, 0, getWidth());
+        auto y = jmap(gDb, -24.f, 24.f, float(bottom), float(top));
+        //        g.drawHorizontalLine(y, 0, getWidth());
         g.setColour(gDb == 0.f ? Colour(201u, 0u, 97u) : Colours::darkgrey);
         g.drawHorizontalLine(y, left, right);
     }
-    
-//    g.drawRect(getAnalysisArea());
+
+    //    g.drawRect(getAnalysisArea());
+
+    g.setColour(Colours::lightgrey);
+    const int fontHeight = 10;
+    g.setFont(fontHeight);
+
+    for (int i = 0; i < freqs.size(); ++i)
+    {
+        auto f = freqs[i];
+        auto x = xs[i];
+
+        bool addK = false;
+        String str;
+        if (f > 999.f)
+        {
+            addK = true;
+            f /= 1000.f;
+        }
+        str << f;
+        if (addK)
+            str << "k";
+        str << "Hz";
+        auto textWidth = g.getCurrentFont().getStringWidth(str);
+
+        Rectangle<int> r;
+        r.setSize(textWidth, fontHeight);
+        r.setCentre(x, 0);
+        r.setY(1);
+
+        g.drawFittedText(str, r, juce::Justification::centred, 1);
+    }
 }
 
 juce::Rectangle<int> ResponseCurveComponent::getRenderArea()
 {
     auto bounds = getLocalBounds();
-//    bounds.reduce(10, //JUCE_LIVE_CONSTANT(10),
-//                  8); //JUCE_LIVE_CONSTANT(8));
+    //    bounds.reduce(10, //JUCE_LIVE_CONSTANT(10),
+    //                  8); //JUCE_LIVE_CONSTANT(8));
     bounds.removeFromTop(12);
-    bounds.removeFromBottom(2);
+    bounds.removeFromBottom(0);
     bounds.removeFromLeft(20);
     bounds.removeFromRight(20);
-    
+
     return bounds;
 }
 
@@ -414,7 +440,7 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
     {
         addAndMakeVisible(comp);
     }
-    setSize(600, 480);
+    setSize(500, 480);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor()
@@ -434,11 +460,11 @@ void SimpleEQAudioProcessorEditor::resized()
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
     auto bounds = getLocalBounds();
-    float hRatio = 25.f / 100.f; //JUCE_LIVE_CONSTANT(33)/100.f;
+    float hRatio = 25.f / 100.f; // JUCE_LIVE_CONSTANT(33)/100.f;
     auto responseArea = bounds.removeFromTop(bounds.getHeight() * hRatio);
 
     responseCurveComponent.setBounds(responseArea);
-    
+
     bounds.removeFromTop(5);
 
     auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
