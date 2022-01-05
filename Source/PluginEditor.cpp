@@ -23,7 +23,7 @@ void LookAndFeel::drawRotarySlider(juce::Graphics & g,
     
     auto bounds = Rectangle<float>(x,y,width,height);
     
-    g.setColour(Colour(36u,36u,36u));
+    g.setColour(Colour(25u,25u,25u));
     g.fillEllipse(bounds);
     g.setColour(Colour(100u,100u,100u));
     g.drawEllipse(bounds, 1.f);
@@ -90,6 +90,32 @@ void RotarySliderWithLabels::paint(juce::Graphics &g)
                                       startAng,
                                       endAng,
                                       *this);
+    
+    auto center = sliderBounds.toFloat().getCentre();
+    auto radius = sliderBounds.getWidth() * 0.5f;
+    
+    g.setColour(Colour(201u,0u,97u));
+    g.setFont(getTextHeight());
+    
+    auto numChoices = labels.size();
+    for(int i = 0; i < numChoices; ++i)
+    {
+        auto pos = labels[i].pos;
+        jassert(0.f <= pos);
+        jassert(pos <= 1.f);
+        
+        auto ang = jmap(pos, 0.f, 1.f, startAng, endAng);
+        
+        auto c = center.getPointOnCircumference(radius + getTextHeight() * 0.5f + 1, ang);
+        
+        Rectangle<float> r;
+        auto str = labels[i].label;
+        r.setSize(g.getCurrentFont().getStringWidth(str), getTextHeight());
+        r.setCentre(c);
+        r.setY(r.getY() + getTextHeight());
+        
+        g.drawFittedText(str, r.toNearestInt(), juce::Justification::centred, 1);
+    }
 }
 
 juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const
@@ -283,6 +309,11 @@ highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlope
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
+    
+    peakFreqSlider.labels.add({0.f,"20Hz"});
+    peakFreqSlider.labels.add({1.f,"20kHz"});
+
+    
     for(auto* comp : getComps())
     {
         addAndMakeVisible(comp);
